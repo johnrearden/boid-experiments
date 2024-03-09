@@ -1,6 +1,6 @@
 const COMFORTABLE_DIST_TO_ORIGIN_SQ = Math.pow(60, 2);
 const HEADING_DIFF_MIN = Math.PI / 8;
-const TURN_RATE = 0.1;
+const TURN_RATE = 0.05;
 const NEIGHBOUR_DIST = 30;
 const COLLISION_DIST = 5;
 const PIby2 = Math.PI * 2;
@@ -27,11 +27,11 @@ class Boid {
     constructor(id, domElement) {
         this.id = id;
         this.xPos = -700 + Math.random() * 1400;
-        this.yPos = -50 + 50 * Math.random();
-        this.zPos = -400 + Math.random() * 800;
+        this.yPos = 100 + 50 * Math.random();
+        this.zPos = 1000 + Math.random() * 800;
         this.neighbours = [];
 
-        this.vel = 6;
+        this.vel = 10;
         this.heading = Math.random() * PIby2;
 
         this.domElement = domElement;
@@ -48,7 +48,6 @@ class Boid {
         this.turnTowardOrigin(xAv, yAv, zAv, headingAv);
     }
 
-    setNeighbours
 
     turnTowardOrigin = (xAv, yAv, zAv, headingAv) => {
         const distSqToCenter = Math.pow(this.xPos - xAv, 2) + Math.pow(this.zPos - zAv, 2)
