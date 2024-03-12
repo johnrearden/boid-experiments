@@ -1,22 +1,22 @@
-const FLOCK_SIZE = 100;
-const PERSPECTIVE = 1000;
+const FLOCK_SIZE = 150;
+const PERSPECTIVE = 700;
 const PIby2 = Math.PI * 2;
 const PI = Math.PI;
 
 let SLO_MO = 1;
 let FRAME_COUNT = 0;
 
-let TURN_FACTOR = 0.4;
+let TURN_FACTOR = 0.3;
 let VISUAL_RANGE = 80;
-let PROTECTED_RANGE = 4;
-let CENTER_FACTOR = 0.002;
-let AVOID_FACTOR = 0.2;
+let PROTECTED_RANGE = 9;
+let CENTER_FACTOR = 0.001;
+let AVOID_FACTOR = 0.6;
 let MATCHING_FACTOR = 0.1;
 let MAX_SPEED = 8;
-let MIN_SPEED = 5;
+let MIN_SPEED = 4;
 
-let sloMo;
-let frameCount;
+let sloMo = SLO_MO;
+let frameCount = 0;
 let currentBoid = 0;
 let currentNeighbours = [];
 
@@ -29,7 +29,7 @@ let matchingFactor;
 let maxSpeed;
 let minSpeed;
 
-const topDownViewRatio = 0.15;
+const topDownViewRatio = 0.2;
 
 const xPosMin = -400;
 const xPosMax = 300;
@@ -61,9 +61,9 @@ class Boid {
         let closeDx = 0;
         let closeDz = 0;
         for (let boid of neighbours) {
-            const dx = Math.abs(this.xPos - boid.xPos);
-            const dz = Math.abs(this.zPos - boid.zPos);
-            if (dx < protectedRange && dz < protectedRange) {
+            const dx = this.xPos - boid.xPos;
+            const dz = this.zPos - boid.zPos;
+            if (Math.pow(dx, 2) + Math.pow(dz, 2) < Math.pow(protectedRange, 2)) {
                 closeDx += dx;
                 closeDz += dz;
             }
@@ -137,23 +137,6 @@ class Boid {
         this.domElement.style.transform = adjustment;
         let topDownAdjustment = `translate(${this.xPos * topDownViewRatio}px,${this.zPos * topDownViewRatio}px)`;
         this.topDownElement.style.transform = topDownAdjustment;
-        //
-
-        // if (this.id === currentBoid) {
-        //     this.domElement.classList.add('highlight-green');
-        //     this.topDownElement.classList.add('highlight-green');
-        // } else {
-        //     this.domElement.classList.remove('highlight-green');
-        //     this.topDownElement.classList.remove('highlight-green');
-        // }
-
-        // if (currentNeighbours.includes(this)) {
-        //     this.domElement.classList.add('neighbour');
-        //     this.topDownElement.classList.add('top-down-neighbour');
-        // } else {
-        //     this.domElement.classList.remove('neighbour');
-        //     this.topDownElement.classList.remove('top-down-neighbour');
-        // }
     }
 }
 
@@ -177,7 +160,6 @@ class Flock {
 
             // Create top-down-view boid div
             const topDownBoidDiv = document.createElement('div');
-            topDownBoidDiv.textContent = i.toString();
             topDownBoidDiv.id = `top-down-boid_${i}`;
             topDownBoidDiv.classList.add('top-down-boid');
             topDownDiv.append(topDownBoidDiv);
@@ -358,17 +340,32 @@ const handleSloMoChange = (value) => {
 }
 
 const resetToDefaults = () => {
-    sloMo = SLO_MO;
+    
     frameCount = FRAME_COUNT;
     currentBoid = 0;
     currentNeighbours = [];
 
     turnFactor = TURN_FACTOR;
+    document.getElementById('turn-factor').value = TURN_FACTOR;
+
     visualRange = VISUAL_RANGE;
+    document.getElementById('visual-range').value = VISUAL_RANGE;
+    
     protectedRange = PROTECTED_RANGE;
+    document.getElementById('protected-range').value = PROTECTED_RANGE;
+
     centeringFactor = CENTER_FACTOR;
+    document.getElementById('center-factor').value = CENTER_FACTOR;
+
     avoidFactor = AVOID_FACTOR;
+    document.getElementById('avoid-factor').value = AVOID_FACTOR;
+
     matchingFactor = MATCHING_FACTOR;
+    document.getElementById('matching-factor').value = MATCHING_FACTOR;
+
     maxSpeed = MAX_SPEED;
+    document.getElementById('max-speed').value = MAX_SPEED;
+
     minSpeed = MIN_SPEED;
+    document.getElementById('min-speed').value = MIN_SPEED;
 }

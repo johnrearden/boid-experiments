@@ -12,7 +12,10 @@
         <span id="heading">
             <h4>Boid Experiments</h4>
         </span>
-        <span onclick="toggleSettings()"><i id="settings-icon" class="fa-solid fa-gear"></i></span>
+        <span 
+            onclick="toggleSettings()"
+            class="select-none"
+        ><i id="settings-icon" class="fa-solid fa-gear"></i></span>
         
         <div id="top-down-view"></div>
 
@@ -52,7 +55,7 @@
                     name="slo-mo"
                     min="20"
                     max="200"
-                    step="10"
+                    step="5"
                     value="80"
                     oninput="visualRange = parseInt(this.value);"
                 />
@@ -66,7 +69,7 @@
                     min="1"
                     max="20"
                     step="1"
-                    value="4"
+                    value="9"
                     oninput="protectedRange = parseInt(this.value);"
                 />
             </div>
@@ -79,8 +82,8 @@
                     min="0.0005"
                     max="0.005"
                     step="0.0005"
-                    value="0.002"
-                    oninput="centeringFactor = parseInt(this.value);"
+                    value="0.001"
+                    oninput="centeringFactor = parseFloat(this.value);"
                 />
             </div>
             <div class="control-item">
@@ -92,8 +95,11 @@
                     min="0.1"
                     max="1.0"
                     step="0.05"
-                    value="0.4"
-                    oninput="avoidFactor = parseInt(this.value);"
+                    value="0.6"
+                    oninput="
+                        avoidFactor = parseFloat(this.value);
+                        console.log('avoidFactor : ', avoidFactor);
+                    "
                 />
             </div>
             <div class="control-item">
@@ -105,8 +111,47 @@
                     min="0.1"
                     max="1.0"
                     step="0.05"
-                    value="0.4"
-                    oninput="turnFactor = parseInt(this.value);"
+                    value="0.3"
+                    oninput="turnFactor = parseFloat(this.value);"
+                />
+            </div>
+            <div class="control-item">
+                <label for="matching-factor">Matching Factor</label>
+                <input 
+                    type="number"
+                    id="matching-factor"
+                    name="slo-mo"
+                    min="0.02"
+                    max="0.3"
+                    step="0.02"
+                    value="0.1"
+                    oninput="matchingFactor = parseFloat(this.value);"
+                />
+            </div>
+            <div class="control-item">
+                <label for="max-speed">Max Speed</label>
+                <input 
+                    type="number"
+                    id="max-speed"
+                    name="slo-mo"
+                    min="4"
+                    max="12"
+                    step="0.5"
+                    value="8"
+                    oninput="maxSpeed = parseFloat(this.value);"
+                />
+            </div>
+            <div class="control-item">
+                <label for="min-speed">Min Speed</label>
+                <input 
+                    type="number"
+                    id="min-speed"
+                    name="slo-mo"
+                    min="1"
+                    max="6"
+                    step="0.5"
+                    value="4"
+                    oninput="minSpeed = parseFloat(this.value);"
                 />
             </div>
             <button onclick="resetToDefaults()">Reset to Defaults</button>
