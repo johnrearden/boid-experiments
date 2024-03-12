@@ -1,10 +1,335 @@
-const COMFORTABLE_DIST_TO_ORIGIN_SQ = Math.pow(60, 2);
-const HEADING_DIFF_MIN = Math.PI / 8;
-const TURN_RATE = 0.05;
-const NEIGHBOUR_DIST = 30;
-const COLLISION_DIST = 5;
+const FLOCK_SIZE = 100;
+const PERSPECTIVE = 1000;
 const PIby2 = Math.PI * 2;
 const PI = Math.PI;
+
+let SLO_MO = 1;
+let FRAME_COUNT = 0;
+
+let TURN_FACTOR = 0.4;
+let VISUAL_RANGE = 80;
+let PROTECTED_RANGE = 4;
+let CENTER_FACTOR = 0.002;
+let AVOID_FACTOR = 0.2;
+let MATCHING_FACTOR = 0.1;
+let MAX_SPEED = 8;
+let MIN_SPEED = 5;
+
+let sloMo;
+let frameCount;
+let currentBoid = 0;
+let currentNeighbours = [];
+
+let turnFactor;
+let visualRange;
+let protectedRange;
+let centeringFactor;
+let avoidFactor;
+let matchingFactor;
+let maxSpeed;
+let minSpeed;
+
+const topDownViewRatio = 0.15;
+
+const xPosMin = -400;
+const xPosMax = 300;
+const zPosMin = -400;
+const zPosMax = 400;
+
+
+class Boid {
+    constructor(id, domElement, topDownElement) {
+        this.id = id;
+        this.xPos = -50 + Math.random() * 100;
+        this.yPos = -100 - 50 * Math.random();
+        this.zPos = 1000 + Math.random() * 100;
+
+        this.yVel = 0;
+
+        this.vel = minSpeed;
+        let heading = - PI + PIby2 * Math.random();
+        this.xVel = this.vel * Math.cos(heading);
+        this.zVel = this.vel * Math.sin(heading);
+
+        this.domElement = domElement;
+        this.topDownElement = topDownElement;
+    }
+
+    update = (neighbours) => {
+
+        // Separation
+        let closeDx = 0;
+        let closeDz = 0;
+        for (let boid of neighbours) {
+            const dx = Math.abs(this.xPos - boid.xPos);
+            const dz = Math.abs(this.zPos - boid.zPos);
+            if (dx < protectedRange && dz < protectedRange) {
+                closeDx += dx;
+                closeDz += dz;
+            }
+        }
+        this.xVel += closeDx * avoidFactor;
+        this.zVel += closeDz * avoidFactor;
+
+
+        // Alignment
+        let avXVel = 0;
+        let avZVel = 0;
+        for (let boid of neighbours) {
+            avXVel += boid.xVel;
+            avZVel += boid.zVel;
+        }
+        if (neighbours.length > 0) {
+            avXVel /= neighbours.length;
+            avZVel /= neighbours.length;
+            this.xVel += (avXVel - this.xVel) * matchingFactor;
+            this.zVel += (avZVel - this.zVel) * matchingFactor;
+        }
+
+
+        // Cohesion
+        let avXPos = 0;
+        let avZPos = 0;
+        for (let boid of neighbours) {
+            avXPos += boid.xPos;
+            avZPos += boid.zPos;
+        }
+        if (neighbours.length > 0) {
+            avXPos /= neighbours.length;
+            avZPos /= neighbours.length;
+            this.xVel += (avXPos - this.xPos) * centeringFactor;
+            this.zVel += (avZPos - this.zPos) * centeringFactor;
+        }
+
+        // Check speed within range
+        let speed = Math.sqrt(Math.pow(this.xVel, 2) + Math.pow(this.zVel, 2));
+        if (speed > maxSpeed) {
+            this.xVel = this.xVel / speed * maxSpeed;
+            this.zVel = this.zVel / speed * maxSpeed;
+        }
+        if (speed < minSpeed) {
+            this.xVel = this.xVel / speed * minSpeed;
+            this.zVel = this.zVel / speed * minSpeed;
+        }
+
+        // Check boid inside allowable box
+        if (this.xPos < xPosMin) {
+            this.xVel += turnFactor;
+        }
+        if (this.xPos > xPosMax) {
+            this.xVel -= turnFactor;
+        }
+        if (this.zPos < zPosMin) {
+            this.zVel += turnFactor;
+        }
+        if (this.zPos > zPosMax) {
+            this.zVel -= turnFactor;
+        }
+
+        // Update positions
+        this.xPos += this.xVel;
+        this.yPos += this.yVel;
+        this.zPos += this.zVel;
+
+        // Move boid to correct position on main and top-down displays
+        let heading = Math.atan2(this.zVel, this.xVel);
+        let adjustment = `perspective(${PERSPECTIVE}px) translate3d(${this.xPos}px,${this.yPos}px,${this.zPos}px) rotateY(${-heading}rad)`;
+        this.domElement.style.transform = adjustment;
+        let topDownAdjustment = `translate(${this.xPos * topDownViewRatio}px,${this.zPos * topDownViewRatio}px)`;
+        this.topDownElement.style.transform = topDownAdjustment;
+        //
+
+        // if (this.id === currentBoid) {
+        //     this.domElement.classList.add('highlight-green');
+        //     this.topDownElement.classList.add('highlight-green');
+        // } else {
+        //     this.domElement.classList.remove('highlight-green');
+        //     this.topDownElement.classList.remove('highlight-green');
+        // }
+
+        // if (currentNeighbours.includes(this)) {
+        //     this.domElement.classList.add('neighbour');
+        //     this.topDownElement.classList.add('top-down-neighbour');
+        // } else {
+        //     this.domElement.classList.remove('neighbour');
+        //     this.topDownElement.classList.remove('top-down-neighbour');
+        // }
+    }
+}
+
+class Flock {
+    constructor(population) {
+        this.pop = population;
+        this.boids = [];
+        this.xList = [];
+        this.yList = [];
+        this.zList = [];
+
+        const worldDiv = document.getElementById('world');
+        const topDownDiv = document.getElementById('top-down-view')
+        for (let i = 0; i < this.pop; i++) {
+            const div = document.createElement('div');
+            const code = 65 + Math.floor(Math.random() * 26);
+            div.textContent = String.fromCharCode(code);
+            div.id = `boid_${i}`;
+            div.classList.add('boid');
+            worldDiv.appendChild(div);
+
+            // Create top-down-view boid div
+            const topDownBoidDiv = document.createElement('div');
+            topDownBoidDiv.textContent = i.toString();
+            topDownBoidDiv.id = `top-down-boid_${i}`;
+            topDownBoidDiv.classList.add('top-down-boid');
+            topDownDiv.append(topDownBoidDiv);
+
+            // Create the boid 
+            const newBoid = new Boid(i, div, topDownBoidDiv);
+            this.boids.push(newBoid);
+            this.xList.push(newBoid);
+            this.yList.push(newBoid);
+            this.zList.push(newBoid);
+        }
+        this.sortLists();
+
+        this.avgPosDiv = document.createElement('div');
+        this.avgPosDiv.classList.add('avg-pos');
+        worldDiv.appendChild(this.avgPosDiv);
+
+        this.topDownAvgPosDiv = document.createElement('div');
+        this.topDownAvgPosDiv.classList.add('top-down-avg-pos');
+        topDownDiv.appendChild(this.topDownAvgPosDiv);
+
+
+
+    }
+
+    update = () => {
+        const now = performance.now();
+        if (++frameCount % sloMo === 0) {
+            const { xAv, yAv, zAv } = this.getAverages();
+
+            // Draw average position on main boid display.
+            let adjustment = `perspective(${PERSPECTIVE}px) translate3d(${xAv}px,${yAv}px,${zAv}px)`;
+            this.avgPosDiv.style.transform = adjustment;
+
+            // Draw average position on top down display.
+            adjustment = `translate(${xAv * topDownViewRatio}px, ${zAv * topDownViewRatio}px)`;
+            this.topDownAvgPosDiv.style.transform = adjustment;
+
+            this.sortLists();
+
+            for (let i = 0; i < this.boids.length; i++) {
+                let neighbours = this.getNeighours(this.boids[i]);
+                if (i === currentBoid) {
+                    currentNeighbours = neighbours;
+                }
+                this.boids[i].update(neighbours);
+            }
+        }
+
+        //console.log(performance.now() - now)
+        requestAnimationFrame(this.update);
+    }
+
+    getNeighours = (boid) => {
+        let xCandidates = [];
+        xCandidates.push(boid); // this boid will be the starting point for the linear search
+        let pointer = this.xList.indexOf(boid);
+
+        // Look down the xList
+        while (true) {
+            pointer--;
+            if (pointer < 0) {
+                break;
+            }
+            const candidate = this.xList[pointer];
+            if (Math.abs(boid.xPos - candidate.xPos) < visualRange) {
+                xCandidates.push(candidate);
+            } else {
+                break;
+            }
+        }
+
+        // Look up the xList
+        pointer = this.xList.indexOf(boid);
+        while (true) {
+            pointer++;
+            if (pointer >= this.xList.length) {
+                break;
+            }
+            const candidate = this.xList[pointer];
+            if (Math.abs(boid.xPos - candidate.xPos) < visualRange) {
+                xCandidates.push(candidate);
+            } else {
+                break;
+            }
+        }
+
+        // Sort xNeighbours by zPos
+        xCandidates = xCandidates.sort((bd1, bd2) => bd1.zPos - bd2.zPos);
+        pointer = xCandidates.indexOf(boid);
+        const zCandidates = [];
+        while (true) {
+            pointer--;
+            if (pointer < 0) {
+                break;
+            }
+            const candidate = xCandidates[pointer];
+            if (Math.abs(boid.zPos - candidate.zPos) < visualRange) {
+                zCandidates.push(candidate);
+            } else {
+                break;
+            }
+        }
+        pointer = xCandidates.indexOf(boid);
+        while (true) {
+            pointer++;
+            if (pointer >= xCandidates.length) {
+                break;
+            }
+            const candidate = xCandidates[pointer];
+            if (Math.abs(boid.zPos - candidate.zPos) < visualRange) {
+                zCandidates.push(candidate);
+            } else {
+                break;
+            }
+        }
+
+        // Now zCandidates represents all neighbours within a cube of side
+        // NEIGHBOUR_DIST * 2, with this boid at the center.
+        return zCandidates;
+
+
+    }
+
+    sortLists = () => {
+        this.xList = this.xList.sort((bd1, bd2) => bd1.xPos - bd2.xPos);
+        this.yList = this.yList.sort((bd1, bd2) => bd1.yPos - bd2.yPos);
+        this.zList = this.zList.sort((bd1, bd2) => bd1.zPos - bd2.zPos);
+    }
+
+    getAverages = () => {
+        let xTot = 0;
+        let yTot = 0;
+        let zTot = 0;
+        for (let i = 0; i < this.xList.length; i++) {
+            xTot += this.xList[i].xPos;
+            yTot += this.yList[i].yPos;
+            zTot += this.zList[i].zPos;
+        }
+        const xAv = xTot / this.xList.length;
+        const yAv = yTot / this.xList.length;
+        const zAv = zTot / this.xList.length;
+        return { xAv, yAv, zAv };
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    resetToDefaults();
+    const flock = new Flock(FLOCK_SIZE);
+    requestAnimationFrame(flock.update);
+})
+
 
 resolveAngle = (angle) => {
     if (angle > PI) {
@@ -23,179 +348,27 @@ resolveAngle = (angle) => {
     return angle;
 }
 
-class Boid {
-    constructor(id, domElement) {
-        this.id = id;
-        this.xPos = -700 + Math.random() * 1400;
-        this.yPos = 100 + 50 * Math.random();
-        this.zPos = 1000 + Math.random() * 800;
-        this.neighbours = [];
-
-        this.vel = 10;
-        this.heading = Math.random() * PIby2;
-
-        this.domElement = domElement;
-    }
-
-    update = (xAv, yAv, zAv, headingAv) => {
-        this.xPos += this.vel * Math.cos(this.heading);
-        this.zPos += this.vel * Math.sin(this.heading);
-
-        let adjustment = `perspective(1500px) translate3d(${this.xPos}px,${this.yPos}px,${this.zPos}px) rotateY(${-this.heading}rad)`;
-
-        this.domElement.style.transform = adjustment;
-
-        this.turnTowardOrigin(xAv, yAv, zAv, headingAv);
-    }
-
-
-    turnTowardOrigin = (xAv, yAv, zAv, headingAv) => {
-        const distSqToCenter = Math.pow(this.xPos - xAv, 2) + Math.pow(this.zPos - zAv, 2)
-        let diff;
-        if (distSqToCenter > COMFORTABLE_DIST_TO_ORIGIN_SQ) {
-            console.log('turn to center')
-            const dirToCenter = Math.atan2(-this.zPos, -this.xPos);
-            diff = resolveAngle(dirToCenter - this.heading);
-            if (Math.abs(diff) > TURN_RATE) {
-                this.heading += Math.sign(diff) * TURN_RATE;
-            }
-        } else {
-            diff = resolveAngle(headingAv - this.heading);
-            this.heading += TURN_RATE * Math.sign(diff);
-            console.log('turn to average heading')
-        }
-        
-    }
+const toggleSettings = () => {
+    console.log('toggle')
+    document.getElementById('controls').classList.toggle('hide');
 }
 
-class Flock {
-    constructor(population) {
-        this.pop = population;
-        this.boids = [];
-        this.xList = [];
-        this.yList = [];
-        this.zList = [];
-
-        const worldDiv = document.getElementById('world');
-        for (let i = 0; i < this.pop; i++) {
-            const div = document.createElement('div');
-            div.textContent = "W";
-            div.id = `boid_${i}`;
-            div.classList.add('boid');
-            const newBoid = new Boid(i, div);
-            this.boids.push(newBoid);
-            this.xList.push(newBoid);
-            this.yList.push(newBoid);
-            this.zList.push(newBoid);
-            worldDiv.appendChild(div);
-        }
-        this.sortLists();
-    }
-
-    update = () => {
-        const { xAv, yAv, zAv, headingAv } = this.getAverages();
-        this.sortLists();
-        for (let boid of this.boids) {
-            boid.update(xAv, yAv, zAv, headingAv);
-        }
-        
-        requestAnimationFrame(this.update);
-    }
-
-    getNeighours = (boid) => {
-        let xCandidates = [];
-        let pointer = this.xList.indexOf(boid);
-        
-        // Look down the xList
-        while (true) {
-            pointer--;
-            if (pointer < 0) {
-                break;
-            }
-            const candidate = this.xList[pointer];
-            if (Math.abs(boid.xPos - candidate.xPos) < NEIGHBOUR_DIST) {
-                xCandidates.push();
-            } else {
-                break;
-            }
-        }
-
-        // Look up the xList
-        pointer = this.xList.indexOf(boid);
-        while (true) {
-            pointer++;
-            if (pointer >= this.xList.length) {
-                break;
-            }
-            const candidate = this.xList[pointer];
-            if (Math.abs(boid.xPos - candidate.xPos) < NEIGHBOUR_DIST) {
-                xCandidates.push();
-            } else {
-                break;
-            }
-        }
-
-        // Sort xNeighbours by zPos
-        xCandidates = xCandidates.sort((bd1, bd2) => bd1.zPos - bd2.zPos);
-        pointer = xCandidates.indexOf(boid);
-        const zCandidates = [];
-        while(true) {
-            pointer--;
-            if (pointer < p) {
-                break;
-            }
-            const candidate = xCandidates[pointer];
-            if (Math.abs(boid.zPos - candidate.zPos) < NEIGHBOUR_DIST) {
-                zCandidates.push();
-            } else {
-                break;
-            }
-        }
-        pointer = xCandidates.indexOf(boid);
-        while(true) {
-            pointer++;
-            if (pointer >= xCandidates.length) {
-                break;
-            }
-            const candidate = xCandidates[pointer];
-            if (Math.abs(boid.zPos - candidate.zPos) < NEIGHBOUR_DIST) {
-                zCandidates.push();
-            } else {
-                break;
-            }
-        }
-
-        // Now zCandidates represents all neighbours within a cube of side
-        // NEIGHBOUR_DIST * 2, with this boid at the center.
-        return zCandidates;
-        
-
-    }
-
-    sortLists = () => {
-        this.xList = this.xList.sort((bd1, bd2) => bd1.xPos - bd2.xPos);
-        this.yList = this.yList.sort((bd1, bd2) => bd1.yPos - bd2.yPos);
-        this.zList = this.zList.sort((bd1, bd2) => bd1.zPos - bd2.zPos);
-    }
-
-    getAverages = () => {
-        let xTot = 0;
-        let yTot = 0;
-        let zTot = 0;
-        let headingTot = 0;
-        for (let i = 0; i < this.xList.length; i++) {
-            xTot += this.xList[i].xPos;
-            yTot += this.yList[i].yPos;
-            zTot += this.zList[i].zPos;
-            headingTot += this.xList[i].heading;
-        }
-        const xAv = xTot / this.xList.length;
-        const yAv = yTot / this.xList.length;
-        const zAv = zTot / this.zList.length;
-        const headingAv = headingTot / this.xList.length;
-        return {xAv, yAv, zAv, headingAv};
-    }
+const handleSloMoChange = (value) => {
+    sloMo = parseInt(value);
 }
 
-const flock = new Flock(6);
-requestAnimationFrame(flock.update);
+const resetToDefaults = () => {
+    sloMo = SLO_MO;
+    frameCount = FRAME_COUNT;
+    currentBoid = 0;
+    currentNeighbours = [];
+
+    turnFactor = TURN_FACTOR;
+    visualRange = VISUAL_RANGE;
+    protectedRange = PROTECTED_RANGE;
+    centeringFactor = CENTER_FACTOR;
+    avoidFactor = AVOID_FACTOR;
+    matchingFactor = MATCHING_FACTOR;
+    maxSpeed = MAX_SPEED;
+    minSpeed = MIN_SPEED;
+}

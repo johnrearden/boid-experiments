@@ -5,14 +5,117 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boid Experiments</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://kit.fontawesome.com/f2f8e80db6.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <h4>Boid Experiments</h4>
-    <span id="dir-to-origin"></span>
-    <span id="heading"></span>
     <div class="boid-canvas" id="world">
+        <span id="heading">
+            <h4>Boid Experiments</h4>
+        </span>
+        <span onclick="toggleSettings()"><i id="settings-icon" class="fa-solid fa-gear"></i></span>
+        
+        <div id="top-down-view"></div>
+
+        <div id="controls">
+            <div class="control-item">
+                <label for="slo-mo">Slow-mo</label>
+                <input 
+                    type="range"
+                    id="slo-mo"
+                    class="slider"
+                    name="slo-mo"
+                    list="slo-mo-ticks"
+                    min="1"
+                    max="10"
+                    value="1"
+                    oninput="handleSloMoChange(this.value)"
+                />
+                <datalist id="slo-mo-ticks">
+                    <option value="2"></option>
+                    <option value="1"></option>
+                    <option value="3"></option>
+                    <option value="4"></option>
+                    <option value="5"></option>
+                    <option value="6"></option>
+                    <option value="7"></option>
+                    <option value="8"></option>
+                    <option value="9"></option>
+                    <option value="10"></option>
+                </datalist>
+            </div>
+
+            <div class="control-item">
+                <label for="visual-range">Visual Range</label>
+                <input 
+                    type="number"
+                    id="visual-range"
+                    name="slo-mo"
+                    min="20"
+                    max="200"
+                    step="10"
+                    value="80"
+                    oninput="visualRange = parseInt(this.value);"
+                />
+            </div>
+            <div class="control-item">
+                <label for="protected-range">Protected Range</label>
+                <input 
+                    type="number"
+                    id="protected-range"
+                    name="slo-mo"
+                    min="1"
+                    max="20"
+                    step="1"
+                    value="4"
+                    oninput="protectedRange = parseInt(this.value);"
+                />
+            </div>
+            <div class="control-item">
+                <label for="center-factor">Center Factor</label>
+                <input 
+                    type="number"
+                    id="center-factor"
+                    name="slo-mo"
+                    min="0.0005"
+                    max="0.005"
+                    step="0.0005"
+                    value="0.002"
+                    oninput="centeringFactor = parseInt(this.value);"
+                />
+            </div>
+            <div class="control-item">
+                <label for="avoid-factor">Avoid Factor</label>
+                <input 
+                    type="number"
+                    id="avoid-factor"
+                    name="slo-mo"
+                    min="0.1"
+                    max="1.0"
+                    step="0.05"
+                    value="0.4"
+                    oninput="avoidFactor = parseInt(this.value);"
+                />
+            </div>
+            <div class="control-item">
+                <label for="turn-factor">Turn Factor</label>
+                <input 
+                    type="number"
+                    id="turn-factor"
+                    name="slo-mo"
+                    min="0.1"
+                    max="1.0"
+                    step="0.05"
+                    value="0.4"
+                    oninput="turnFactor = parseInt(this.value);"
+                />
+            </div>
+            <button onclick="resetToDefaults()">Reset to Defaults</button>
+        </div>
+
         <!-- Boids go here, courtesy of javascript -->
     </div>
+    
+    
     <script src="assets/js/script.js" type="text/javascript"></script>
 </body>
 </html>

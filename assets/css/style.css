@@ -5,29 +5,135 @@ body {
     align-items: center;
     height: 100vh;
     width: 100vw;
+    box-sizing: border-box;
+    margin: 0;
+
 }
 
 h1, h2, h3, h4, h5, h6 {
     text-align: center
 }
 
+#heading {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+}
+
+#settings-icon {
+    position: absolute;
+    top: 30px;
+    right: 50px;
+    color: white;
+}
+
 .boid-canvas {
-    width: 90%;
-    height: 55%;
-    background-color: #dedede;
-    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background-color: #1f1f1f;
+    /* display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: center; */
+    position: relative;
+    overflow:hidden;
+}
+
+#top-down-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 300px;
+    background-color: #dad9d9;
+    color: #1f1f1f;
+    /* display: flex;
+    justify-content: center;
+    align-items: center; */
+    position: relative;
+}
+
+.top-down-boid {
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    font-size: 0.5rem;
+    font-weight: bold;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background-color: #1f1f1f;;
+    color: #dad9d9;
+}
+
+#controls {
+    position: absolute;
+    top: 50px;
+    left: 70%;
+    color: #dad9d9;
+    background-color: #dad9d930;
+    border-radius: 5px;
+}
+
+.control-item {
+    padding: 3px;
+    margin: 3px;
+    
+}
+
+.slider {
+    background-color: white;
+    color: black;
 }
 
 .boid {
-    font-size: 0.7rem;
+    color: #bd8c1c;
+    position: absolute;
+    font-size: 0.6rem;
     width: fit-content;
+    top: 75%;
+    left: 50%;
 }
 
-@media  screen and (min-width: 768px) {
-    /* Header */
-    body{
-        background-color: red;
-    }
+.avg-pos {
+    position: absolute;
+    top: 75%;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background-color: red;
+}
+
+.top-down-avg-pos {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background-color: red;
+}
+
+.highlight-green {
+    background-color: green;
+    color: white;
+    font-size: 1rem;
+    z-index: 10;    
+}
+
+.neighbour {
+    background-color: orange;
+    color: black;
+    font-size: 1rem;
+}
+
+.top-down-neighbour {
+    background-color: orange;
+    color: black;
+}
+
+.hide {
+    display: none;
 }
