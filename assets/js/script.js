@@ -14,6 +14,7 @@ let AVOID_FACTOR = 0.6;
 let MATCHING_FACTOR = 0.1;
 let MAX_SPEED = 8;
 let MIN_SPEED = 4;
+let ACCELERATION = 0.07;
 
 let sloMo = SLO_MO;
 let frameCount = 0;
@@ -28,6 +29,7 @@ let avoidFactor;
 let matchingFactor;
 let maxSpeed;
 let minSpeed;
+let acceleration;
 
 const topDownViewRatio = 0.2;
 
@@ -44,12 +46,17 @@ class Boid {
         this.yPos = -100 - 50 * Math.random();
         this.zPos = 1000 + Math.random() * 100;
 
+        this.xAcc = 0;
+        this.zAcc = 0;
+
         this.yVel = 0;
 
         this.vel = minSpeed;
         let heading = - PI + PIby2 * Math.random();
         this.xVel = this.vel * Math.cos(heading);
         this.zVel = this.vel * Math.sin(heading);
+        this.xVelTarget = this.xVel;
+        this.zVelTarget = this.zVel;
 
         this.domElement = domElement;
         this.topDownElement = topDownElement;
@@ -68,8 +75,8 @@ class Boid {
                 closeDz += dz;
             }
         }
-        this.xVel += closeDx * avoidFactor;
-        this.zVel += closeDz * avoidFactor;
+        this.xVelTarget += closeDx * avoidFactor;
+        this.zVelTarget += closeDz * avoidFactor;
 
 
         // Alignment
@@ -82,8 +89,8 @@ class Boid {
         if (neighbours.length > 0) {
             avXVel /= neighbours.length;
             avZVel /= neighbours.length;
-            this.xVel += (avXVel - this.xVel) * matchingFactor;
-            this.zVel += (avZVel - this.zVel) * matchingFactor;
+            this.xVelTarget += (avXVel - this.xVelTarget) * matchingFactor;
+            this.zVelTarget += (avZVel - this.zVelTarget) * matchingFactor;
         }
 
 
@@ -97,33 +104,43 @@ class Boid {
         if (neighbours.length > 0) {
             avXPos /= neighbours.length;
             avZPos /= neighbours.length;
-            this.xVel += (avXPos - this.xPos) * centeringFactor;
-            this.zVel += (avZPos - this.zPos) * centeringFactor;
+            this.xVelTarget += (avXPos - this.xPos) * centeringFactor;
+            this.zVelTarget += (avZPos - this.zPos) * centeringFactor;
         }
 
         // Check speed within range
-        let speed = Math.sqrt(Math.pow(this.xVel, 2) + Math.pow(this.zVel, 2));
+        let speed = Math.sqrt(Math.pow(this.xVelTarget, 2) + Math.pow(this.zVelTarget, 2));
         if (speed > maxSpeed) {
-            this.xVel = this.xVel / speed * maxSpeed;
-            this.zVel = this.zVel / speed * maxSpeed;
+            this.xVelTarget = this.xVelTarget / speed * maxSpeed;
+            this.zVelTarget = this.zVelTarget / speed * maxSpeed;
         }
         if (speed < minSpeed) {
-            this.xVel = this.xVel / speed * minSpeed;
-            this.zVel = this.zVel / speed * minSpeed;
+            this.xVelTarget = this.xVelTarget / speed * minSpeed;
+            this.zVelTarget = this.zVelTarget / speed * minSpeed;
         }
 
         // Check boid inside allowable box
         if (this.xPos < xPosMin) {
-            this.xVel += turnFactor;
+            this.xVelTarget += turnFactor;
         }
         if (this.xPos > xPosMax) {
-            this.xVel -= turnFactor;
+            this.xVelTarget -= turnFactor;
         }
         if (this.zPos < zPosMin) {
-            this.zVel += turnFactor;
+            this.zVelTarget += turnFactor;
         }
         if (this.zPos > zPosMax) {
-            this.zVel -= turnFactor;
+            this.zVelTarget -= turnFactor;
+        }
+
+        // Increase/decrease x and z Vel in direction of target velocities
+        if (Math.abs(this.xVelTarget - this.xVel) > acceleration) {
+            const sign = Math.sign(this.xVelTarget - this.xVel);
+            this.xVel += sign * acceleration;
+        }
+        if (Math.abs(this.zVelTarget - this.zVel) > acceleration) {
+            const sign = Math.sign(this.zVelTarget - this.zVel);
+            this.zVel += sign * acceleration;
         }
 
         // Update positions
@@ -368,4 +385,6 @@ const resetToDefaults = () => {
 
     minSpeed = MIN_SPEED;
     document.getElementById('min-speed').value = MIN_SPEED;
+
+    acceleration = ACCELERATION;
 }
